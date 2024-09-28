@@ -1,5 +1,1 @@
-pip install -r requirements.txt
-
-Python version -> 3.12.3
-
-
+Add Swinburne_Chat_Bot locally as its of a large size which is not allowed.
