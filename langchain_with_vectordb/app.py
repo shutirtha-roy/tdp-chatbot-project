@@ -149,23 +149,6 @@ class ChatInterface:
                     similar_questions = [q.strip().strip('•') for q in parts[1].strip().split('\n') if q.strip()]
                     self.display_similar_questions(similar_questions)
 
-        # JavaScript to handle button clicks and update input field
-        js = """
-        <script>
-        const buttons = parent.document.querySelectorAll('button[data-testid^="stButton"]');
-        buttons.forEach(button => {
-            button.addEventListener('click', function() {
-                const inputField = parent.document.querySelector('input[data-testid="stTextInput"]');
-                if (inputField) {
-                    inputField.value = this.innerText;
-                    inputField.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-        });
-        </script>
-        """
-        st.components.v1.html(js)
-
     def run(self):
         self.setup_page()
         user_input = self.get_user_input()
