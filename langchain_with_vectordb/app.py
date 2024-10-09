@@ -78,6 +78,20 @@ class ChatBot:
             'chat_history': chat_history
         })
         return response['answer']
+    
+    def generate_similar_questions(self, query):
+        prompt = f"Generate 3 similar questions in bullet points related to: '{query}'. The questions should be about Swinburne University."
+        response = self.process_chat(prompt, [])
+        return response.split('\n')
+
+    def process_chat_with_similar_questions(self, query, chat_history):
+        answer = self.process_chat(query, chat_history)
+        similar_questions = self.generate_similar_questions(query)
+        
+        full_response = f"{answer}\n\nHere are three similar questions:\n"
+        full_response += "\n".join(similar_questions)
+        
+        return full_response
 
 class ChatInterface:
     def __init__(self, chatbot):
@@ -104,7 +118,7 @@ class ChatInterface:
     def process_user_input(self, user_input):
         with st.spinner('FAQ Chatbot is thinking...'):
             self.chat_history.append(HumanMessage(content=user_input))
-            ai_output = self.chatbot.process_chat(user_input, self.chat_history)
+            ai_output = self.chatbot.process_chat_with_similar_questions(user_input, self.chat_history)
             self.chat_history.append(AIMessage(content=ai_output))
 
     def run(self):
