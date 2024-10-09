@@ -1,2 +1,4 @@
 .env
 __pycache__
+/Swinburne_Chat_Bot/*.faiss
+/Swinburne_Chat_Bot/*.pkl
