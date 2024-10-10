@@ -1,4 +1,5 @@
 # main.py
+import csv
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -12,6 +13,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.documents import Document
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
 class Chat(BaseModel):
     username: str
     user_id: int
@@ -29,6 +31,8 @@ app.add_middleware(
     allow_methods=["*"],  # You can specify which methods to allow
     allow_headers=["*"],  # You can specify which headers to allow
 )
+
+
 class AddDataRequest(BaseModel):
     documents: list[str]  # List of new texts to add to FAISS
 
@@ -203,6 +207,10 @@ async def add_topic(request: AddTopicRequest):
         # Save the updated FAISS index to the disk
         vector_db_topic.vector_store.save_local(vector_db_topic.vector_path)
         
+        
+        # Update the topic count in the CSV file
+        update_topic_count(request.topics)
+
         return {"message": "Topics added successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while adding topics: {str(e)}")
@@ -218,11 +226,44 @@ async def get_similar_topics(request: SimilarTopicRequest):
             )
             similar_topics = [doc.page_content for doc in search_results]
         else:
-            search_results = vector_db_topic.vector_store.similarity_search(
-                "", k=5
-            )
-            similar_topics = [doc.page_content for doc in search_results]
+            similar_topics = get_most_frequent_topics()
 
         return SimilarTopicResponse(topics=similar_topics)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+
+
+topics_file = "topics.csv"
+
+def initialize_topics_file():
+    if not os.path.exists(topics_file):
+        with open(topics_file, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["topic", "count"])
+
+def update_topic_count(new_topics):
+    topics_dict = {}
+    if os.path.exists(topics_file):
+        with open(topics_file, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                topics_dict[row["topic"]] = int(row["count"])
+    
+    for topic in new_topics:
+        topics_dict[topic] = topics_dict.get(topic, 0) + 1
+    
+    with open(topics_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["topic", "count"])
+        for topic, count in topics_dict.items():
+            writer.writerow([topic, count])
+
+def get_most_frequent_topics(n=5):
+    topics = []
+    if os.path.exists(topics_file):
+        with open(topics_file, mode='r') as file:
+            reader = csv.DictReader(file)
+            sorted_topics = sorted(reader, key=lambda x: int(x["count"]), reverse=True)
+            topics = [row["topic"] for row in sorted_topics[:n]]
+    return topics
