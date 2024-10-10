@@ -29,6 +29,17 @@ app.add_middleware(
     allow_methods=["*"],  # You can specify which methods to allow
     allow_headers=["*"],  # You can specify which headers to allow
 )
+class AddDataRequest(BaseModel):
+    documents: list[str]  # List of new texts to add to FAISS
+
+class AddTopicRequest(BaseModel):
+    topics: list[str]  # List of topics (user queries) to add to FAISS
+
+class SimilarTopicRequest(BaseModel):
+    query: str | None = None  # Optional user query
+class SimilarTopicResponse(BaseModel):
+    topics: list[str]  # List of the top 3 most similar topics
+
 # Define data model for user input
 class ChatRequest(BaseModel):
     query: str
@@ -111,17 +122,17 @@ class ChatBot:
         return ChatPromptTemplate.from_messages([
             ('system', """You are an AI assistant exclusively designed for Swinburne University students. Your sole purpose is to provide information directly related to Swinburne University. Here are your strict guidelines:
 
-            1. ONLY answer questions based on the given context {context} about Swinburne University.
-            2. If a question is not specifically about Swinburne University, DO NOT answer it. This includes but is not limited to:
-               - General knowledge questions (e.g., "Who is the CEO of Google?")
-               - Weather information
-               - Current events not related to Swinburne
-               - Any topic not directly concerning Swinburne University
-            3. For non-Swinburne questions, respond with: "I'm sorry, but I can only provide information about Swinburne University. If you have any questions related to Swinburne, I'd be happy to help!"
-            4. Be friendly and supportive, but maintain a professional tone when discussing Swinburne-related topics.
-            5. If you're unsure about a Swinburne-related answer, say so and suggest where the student might find more information within the university.
-            6. Do not provide personal opinions or advice. Stick strictly to official Swinburne University information.
-            7. For sensitive Swinburne-related topics, direct students to appropriate university resources or support services.
+            # 1. ONLY answer questions based on the given context {context} about Swinburne University.
+            # 2. If a question is not specifically about Swinburne University, DO NOT answer it. This includes but is not limited to:
+            #    - General knowledge questions (e.g., "Who is the CEO of Google?")
+            #    - Weather information
+            #    - Current events not related to Swinburne
+            #    - Any topic not directly concerning Swinburne University
+            # 3. For non-Swinburne questions, respond with: "I'm sorry, but I can only provide information about Swinburne University. If you have any questions related to Swinburne, I'd be happy to help!"
+            # 4. Be friendly and supportive, but maintain a professional tone when discussing Swinburne-related topics.
+            # 5. If you're unsure about a Swinburne-related answer, say so and suggest where the student might find more information within the university.
+            # 6. Do not provide personal opinions or advice. Stick strictly to official Swinburne University information.
+            # 7. For sensitive Swinburne-related topics, direct students to appropriate university resources or support services.
 
             Remember, you are NOT a general-purpose AI. Your knowledge and responses are limited EXCLUSIVELY to Swinburne University-related information."""),
 
@@ -141,6 +152,8 @@ class ChatBot:
 
 # Initialize the vector database and chatbot once when the app starts
 vector_db = VectorDB(vector_path='Swinburne_Chat_Bot')
+
+vector_db_topic = VectorDB(vector_path='Swinburne_Chat_Bot_Topics')
 chatbot = ChatBot(vector_db)
 
 @app.post("/chat", response_model=ChatResponse)
@@ -156,3 +169,60 @@ async def chat(request: ChatRequest):
 @app.get("/health")
 def health_check():
     return {"status": "OK"}
+
+@app.post("/add-data")
+async def add_data(request: AddDataRequest):
+    try:
+        # Get documents from the request
+        documents = [Document(page_content=text) for text in request.documents]
+        
+        # Add documents to FAISS
+        vector_db.vector_store = FAISS.from_documents(documents, vector_db.vector_store.embedding_function)
+        
+        # Save the FAISS index to the disk
+        vector_db.vector_store.save_local(vector_db.vector_path)
+        
+        return {"message": "Documents added successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while adding data: {str(e)}")
+
+@app.post("/add-topic")
+async def add_topic(request: AddTopicRequest):
+    try:
+        # Convert user topics into Document objects
+        new_documents = [Document(page_content=topic) for topic in request.topics]
+
+        print(new_documents)
+
+        # Load the existing FAISS index from the disk, enabling dangerous deserialization
+        vector_db_topic.vector_store = FAISS.load_local(vector_db_topic.vector_path, vector_db_topic.vector_store.embedding_function, allow_dangerous_deserialization=True)
+
+        # Append the new documents to the existing vector store
+        vector_db_topic.vector_store.add_documents(new_documents)
+
+        # Save the updated FAISS index to the disk
+        vector_db_topic.vector_store.save_local(vector_db_topic.vector_path)
+        
+        return {"message": "Topics added successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while adding topics: {str(e)}")
+
+@app.post("/similar-topics", response_model=SimilarTopicResponse)
+async def get_similar_topics(request: SimilarTopicRequest):
+    try:
+        if request.query:
+            print(request.query)
+            # If a query is provided, get the top 3 most similar topics
+            search_results = vector_db_topic.vector_store.similarity_search(
+                request.query, k=5
+            )
+            similar_topics = [doc.page_content for doc in search_results]
+        else:
+            search_results = vector_db_topic.vector_store.similarity_search(
+                "", k=5
+            )
+            similar_topics = [doc.page_content for doc in search_results]
+
+        return SimilarTopicResponse(topics=similar_topics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
