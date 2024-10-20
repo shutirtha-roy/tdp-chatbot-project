@@ -15,7 +15,7 @@ import SendIcon from "@mui/icons-material/Send";
 
 const ChatBot = () => {
     const [chatHistory, setChatHistory] = useState([
-        { user: "bot", message: "Hi! How can I help you today?" },
+        { user: "bot", message: "Welcome to Swinburne University! What information or assistance can I provide you with today?" },
     ]);
     const [inputValue, setInputValue] = useState("");
     const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
@@ -28,6 +28,21 @@ const ChatBot = () => {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [chatHistory]);
+
+    const cleanString = (str) => {
+        // Remove special characters from the beginning of the string
+        let cleaned = str.replace(/^[^a-zA-Z0-9]+/, '');
+        
+        // Remove special characters from the end, except for question marks
+        cleaned = cleaned.replace(/[^a-zA-Z0-9]+$/, '');
+        
+        // If the original string ended with a question mark, add it back
+        if (str.trim().endsWith('?')) {
+            cleaned += '?';
+        }
+        
+        return cleaned.trim();
+    };
 
     const handleSend = async () => {
         if (inputValue.trim() !== "") {
@@ -62,7 +77,10 @@ const ChatBot = () => {
 
                 // Update autoCompleteOptions with similar questions
                 if (data.similar_questions) {
-                    const newOptions = data.similar_questions.split('*').filter(q => q.trim() !== '');
+                    const newOptions = data.similar_questions
+                        .split('*')
+                        .map(q => cleanString(q))
+                        .filter(q => q.trim() !== '');
                     setAutoCompleteOptions(newOptions);
                     setShowSimilarQuestions(true);
                 }
