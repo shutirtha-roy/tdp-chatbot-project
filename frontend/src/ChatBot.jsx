@@ -10,98 +10,135 @@ import {
     InputAdornment,
     Autocomplete,
     Chip,
+    Typography,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { keyframes } from "@mui/system";
+
+const pulseAnimation = keyframes`
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+`;
+
+const ThinkingIndicator = () => (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 2 }}>
+        <Typography variant="body1" sx={{ mr: 1 }}>
+            Swinburne Chatbot is thinking
+        </Typography>
+        {[0, 1, 2].map((i) => (
+            <Typography
+                key={i}
+                variant="body1"
+                component="span"
+                sx={{
+                    animation: `${pulseAnimation} 1.4s ease-in-out ${i * 0.2}s infinite`,
+                    display: 'inline-block',
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    backgroundColor: 'primary.main',
+                    mx: 0.5,
+                }}
+            >
+                .
+            </Typography>
+        ))}
+    </Box>
+);
 
 const ChatBot = () => {
     const [chatHistory, setChatHistory] = useState([
-        { user: "bot", message: "Hi! How can I help you today?" },
+        { user: "bot", message: "Welcome to Swinburne University! What information or assistance can I provide you with today?" },
     ]);
     const [inputValue, setInputValue] = useState("");
-    const [autoCompleteOptions,setAutoCompleteOptions] = useState([
-        "How to apply?",
-        "Course details",
-        "Fees structure",
-        "Campus location",
-    ]);
+    const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
+    const [showSimilarQuestions, setShowSimilarQuestions] = useState(true);
+    const [isThinking, setIsThinking] = useState(false);
 
     const chatContainerRef = useRef(null);
 
-    // Automatically scroll to the bottom when a new message is added
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [chatHistory]);
+    }, [chatHistory, isThinking]);
 
-    const handleSend = () => {
+    const cleanString = (str) => {
+        let cleaned = str.replace(/^[^a-zA-Z0-9]+/, '');
+        cleaned = cleaned.replace(/[^a-zA-Z0-9]+$/, '');
+        if (str.trim().endsWith('?')) {
+            cleaned += '?';
+        }
+        return cleaned.trim();
+    };
+
+    const handleSend = async () => {
         if (inputValue.trim() !== "") {
-            
-            const messageToSend = inputValue; // Store the message to send
-            // Clear the input value immediately
+            const messageToSend = inputValue;
             setInputValue("");
+            setShowSimilarQuestions(false);
+            setIsThinking(true);
 
-            // Add user message to chat history
             setChatHistory((prevHistory) => [
                 ...prevHistory,
                 { user: "user", message: messageToSend },
             ]);
-            
-            // Simulate bot response after user sends a message
-            setTimeout(() => {
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: messageToSend }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
                 setChatHistory((prevHistory) => [
                     ...prevHistory,
-                    { user: "bot", message: `You said: "${messageToSend}"` }, // Use the stored message
+                    { user: "bot", message: data.answer },
                 ]);
-                // setAutoCompleteOptions((prevAutoCompletions) => [
-                //     "How to apply?",
-                //     "Course details",
-                // ]);
-            }, 1000);
+
+                if (data.similar_questions) {
+                    const newOptions = data.similar_questions
+                        .split('*')
+                        .map(q => cleanString(q))
+                        .filter(q => q.trim() !== '');
+                    setAutoCompleteOptions(newOptions);
+                    setShowSimilarQuestions(true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                setChatHistory((prevHistory) => [
+                    ...prevHistory,
+                    { user: "bot", message: "Sorry, I encountered an error. Please try again later." },
+                ]);
+            } finally {
+                setIsThinking(false);
+            }
         }
-    };
-
-    const handleSendFromRecommendation = (topic) => {
-
-        const messageToSend = topic; // Store the message to send
-        console.log(messageToSend)
-        // Clear the input value immediately
-        setInputValue("");
-
-        // Add user message to chat history
-        setChatHistory((prevHistory) => [
-            ...prevHistory,
-            { user: "user", message: messageToSend },
-        ]);
-        
-        // Simulate bot response after user sends a message
-        setTimeout(() => {
-            setChatHistory((prevHistory) => [
-                ...prevHistory,
-                { user: "bot", message: `You said: "${messageToSend}"` }, // Use the stored message
-            ]);
-            // setAutoCompleteOptions((prevAutoCompletions) => [
-            //     "How to apply?",
-            //     "Course details",
-            // ]);
-        }, 1000);
     };
 
     const handleKeyPress = (event) => {
         if (event.key === "Enter") {
-            event.preventDefault(); // Prevent form submission
-            handleSend(); // Call the send function
+            event.preventDefault();
+            handleSend();
         }
     };
 
-    // Function to handle chip click
     const handleChipClick = (topic) => {
-        handleSendFromRecommendation(topic);
+        setInputValue(topic);
+        setShowSimilarQuestions(false);
+        handleSend();
     };
 
     return (
         <Box sx={{ width: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "90vh" }}>
-            {/* Chat history (auto-scroll to the bottom) */}
             <Paper
                 ref={chatContainerRef}
                 sx={{
@@ -134,20 +171,21 @@ const ChatBot = () => {
                         </ListItem>
                     ))}
                 </List>
-                {/* Recommendation Chips */}
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                    {autoCompleteOptions.map((topic) => (
-                        <Chip
-                            key={topic}
-                            label={topic}
-                            onClick={() => handleChipClick(topic)}
-                            sx={{ margin: 1 }}
-                        />
-                    ))}
-                </Box>
+                {isThinking && <ThinkingIndicator />}
+                {showSimilarQuestions && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
+                        {autoCompleteOptions.map((topic, index) => (
+                            <Chip
+                                key={index}
+                                label={topic}
+                                onClick={() => handleChipClick(topic)}
+                                sx={{ margin: 1 }}
+                            />
+                        ))}
+                    </Box>
+                )}
             </Paper>
 
-            {/* Input section with Autocomplete and Send Button */}
             <Box sx={{ display: "flex", width: "100%", padding: 0 }}>
                 <Autocomplete
                     freeSolo
@@ -160,8 +198,8 @@ const ChatBot = () => {
                             label="Type a message..."
                             variant="outlined"
                             fullWidth
-                            onChange={(e) => setInputValue(e.target.value)} // Control the input change
-                            onKeyPress={handleKeyPress} // Handle Enter key press
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyPress={handleKeyPress}
                             InputProps={{
                                 ...params.InputProps,
                                 endAdornment: (
@@ -172,13 +210,13 @@ const ChatBot = () => {
                                     </InputAdornment>
                                 ),
                                 sx: {
-                                    width: "100%", // Ensure the TextField takes full width
+                                    width: "100%",
                                 },
                             }}
                         />
                     )}
                     sx={{
-                        flexGrow: 1, // Makes sure the Autocomplete component takes up the remaining space
+                        flexGrow: 1,
                     }}
                 />
             </Box>

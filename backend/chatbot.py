@@ -11,7 +11,7 @@ class ChatBot:
         self.chat_history = []
 
     def _create_chain(self):
-        model = ChatOpenAI(model="gpt-4-0125-preview", temperature=0.5)
+        model = ChatOpenAI(model="gpt-4o", temperature=0.5)
         prompt = self._create_prompt()
         document_chain = create_stuff_documents_chain(prompt=prompt, llm=model)
         retriever = self.vector_db.get_retriever()
@@ -48,9 +48,10 @@ class ChatBot:
         return response['answer']
     
     def generate_similar_questions(self, query):
-        prompt = f"Generate 3 similar questions in bullet points related to: '{query}'. The questions should be about Swinburne University."
+        prompt = f"Generate 4 similar questions in bullet points related to: '{query}'. The questions should be about Swinburne University."
         response = self.process_chat(prompt, [])
-        return response.split('\n')
+        questions = response.split('\n')
+        return questions[1:]
     
     def process_chat_with_similar_questions(self, query):
         similar_questions = self.generate_similar_questions(query)
