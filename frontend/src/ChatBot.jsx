@@ -18,90 +18,75 @@ const ChatBot = () => {
         { user: "bot", message: "Hi! How can I help you today?" },
     ]);
     const [inputValue, setInputValue] = useState("");
-    const [autoCompleteOptions,setAutoCompleteOptions] = useState([
-        "How to apply?",
-        "Course details",
-        "Fees structure",
-        "Campus location",
-    ]);
+    const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
 
     const chatContainerRef = useRef(null);
 
-    // Automatically scroll to the bottom when a new message is added
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [chatHistory]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (inputValue.trim() !== "") {
-            
-            const messageToSend = inputValue; // Store the message to send
-            // Clear the input value immediately
+            const messageToSend = inputValue;
             setInputValue("");
 
-            // Add user message to chat history
             setChatHistory((prevHistory) => [
                 ...prevHistory,
                 { user: "user", message: messageToSend },
             ]);
-            
-            // Simulate bot response after user sends a message
-            setTimeout(() => {
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: messageToSend }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
                 setChatHistory((prevHistory) => [
                     ...prevHistory,
-                    { user: "bot", message: `You said: "${messageToSend}"` }, // Use the stored message
+                    { user: "bot", message: data.answer },
                 ]);
-                // setAutoCompleteOptions((prevAutoCompletions) => [
-                //     "How to apply?",
-                //     "Course details",
-                // ]);
-            }, 1000);
+
+                // Update autoCompleteOptions with similar questions
+                if (data.similar_questions) {
+                    const newOptions = data.similar_questions.split('-').filter(q => q.trim() !== '');
+                    setAutoCompleteOptions(newOptions);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                setChatHistory((prevHistory) => [
+                    ...prevHistory,
+                    { user: "bot", message: "Sorry, I encountered an error. Please try again later." },
+                ]);
+            }
         }
-    };
-
-    const handleSendFromRecommendation = (topic) => {
-
-        const messageToSend = topic; // Store the message to send
-        console.log(messageToSend)
-        // Clear the input value immediately
-        setInputValue("");
-
-        // Add user message to chat history
-        setChatHistory((prevHistory) => [
-            ...prevHistory,
-            { user: "user", message: messageToSend },
-        ]);
-        
-        // Simulate bot response after user sends a message
-        setTimeout(() => {
-            setChatHistory((prevHistory) => [
-                ...prevHistory,
-                { user: "bot", message: `You said: "${messageToSend}"` }, // Use the stored message
-            ]);
-            // setAutoCompleteOptions((prevAutoCompletions) => [
-            //     "How to apply?",
-            //     "Course details",
-            // ]);
-        }, 1000);
     };
 
     const handleKeyPress = (event) => {
         if (event.key === "Enter") {
-            event.preventDefault(); // Prevent form submission
-            handleSend(); // Call the send function
+            event.preventDefault();
+            handleSend();
         }
     };
 
-    // Function to handle chip click
     const handleChipClick = (topic) => {
-        handleSendFromRecommendation(topic);
+        setInputValue(topic);
+        handleSend();
     };
 
     return (
         <Box sx={{ width: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "90vh" }}>
-            {/* Chat history (auto-scroll to the bottom) */}
             <Paper
                 ref={chatContainerRef}
                 sx={{
@@ -134,11 +119,10 @@ const ChatBot = () => {
                         </ListItem>
                     ))}
                 </List>
-                {/* Recommendation Chips */}
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-                    {autoCompleteOptions.map((topic) => (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
+                    {autoCompleteOptions.map((topic, index) => (
                         <Chip
-                            key={topic}
+                            key={index}
                             label={topic}
                             onClick={() => handleChipClick(topic)}
                             sx={{ margin: 1 }}
@@ -147,7 +131,6 @@ const ChatBot = () => {
                 </Box>
             </Paper>
 
-            {/* Input section with Autocomplete and Send Button */}
             <Box sx={{ display: "flex", width: "100%", padding: 0 }}>
                 <Autocomplete
                     freeSolo
@@ -160,8 +143,8 @@ const ChatBot = () => {
                             label="Type a message..."
                             variant="outlined"
                             fullWidth
-                            onChange={(e) => setInputValue(e.target.value)} // Control the input change
-                            onKeyPress={handleKeyPress} // Handle Enter key press
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyPress={handleKeyPress}
                             InputProps={{
                                 ...params.InputProps,
                                 endAdornment: (
@@ -172,13 +155,13 @@ const ChatBot = () => {
                                     </InputAdornment>
                                 ),
                                 sx: {
-                                    width: "100%", // Ensure the TextField takes full width
+                                    width: "100%",
                                 },
                             }}
                         />
                     )}
                     sx={{
-                        flexGrow: 1, // Makes sure the Autocomplete component takes up the remaining space
+                        flexGrow: 1,
                     }}
                 />
             </Box>
