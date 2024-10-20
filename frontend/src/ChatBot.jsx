@@ -56,6 +56,7 @@ const ChatBot = () => {
     const [showSimilarQuestions, setShowSimilarQuestions] = useState(true);
     const [isThinking, setIsThinking] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     const chatContainerRef = useRef(null);
     const recognitionRef = useRef(null);
@@ -82,6 +83,7 @@ const ChatBot = () => {
 
             recognitionRef.current.onend = () => {
                 setIsListening(false);
+                setIsSearching(false);
             };
         }
     }, []);
@@ -100,6 +102,7 @@ const ChatBot = () => {
             setInputValue("");
             setShowSimilarQuestions(false);
             setIsThinking(true);
+            setIsSearching(true);
 
             setChatHistory((prevHistory) => [
                 ...prevHistory,
@@ -142,6 +145,7 @@ const ChatBot = () => {
                 ]);
             } finally {
                 setIsThinking(false);
+                setIsSearching(false);
             }
         }
     };
@@ -165,6 +169,7 @@ const ChatBot = () => {
         } else {
             recognitionRef.current.start();
             setIsListening(true);
+            setIsSearching(true);
         }
     };
 
@@ -203,7 +208,7 @@ const ChatBot = () => {
                     ))}
                 </List>
                 {isThinking && <ThinkingIndicator />}
-                {showSimilarQuestions && (
+                {showSimilarQuestions && !isSearching && (
                     <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
                         {autoCompleteOptions.map((topic, index) => (
                             <Chip
@@ -220,7 +225,7 @@ const ChatBot = () => {
             <Box sx={{ display: "flex", width: "100%", padding: 0 }}>
                 <Autocomplete
                     freeSolo
-                    options={autoCompleteOptions}
+                    options={isSearching ? [] : autoCompleteOptions}
                     inputValue={inputValue}
                     onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
                     renderInput={(params) => (
@@ -235,10 +240,17 @@ const ChatBot = () => {
                                 ...params.InputProps,
                                 endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton onClick={toggleListening} color={isListening ? "secondary" : "default"}>
+                                        <IconButton 
+                                            onClick={toggleListening} 
+                                            color={isListening ? "secondary" : "default"}
+                                            disabled={isSearching && !isListening}
+                                        >
                                             <MicIcon />
                                         </IconButton>
-                                        <IconButton onClick={() => handleSend()}>
+                                        <IconButton 
+                                            onClick={() => handleSend()}
+                                            disabled={isSearching}
+                                        >
                                             <SendIcon />
                                         </IconButton>
                                     </InputAdornment>
