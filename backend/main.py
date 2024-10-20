@@ -14,6 +14,8 @@ from langchain_core.documents import Document
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
+load_dotenv()
+
 class Chat(BaseModel):
     username: str
     user_id: int
@@ -33,6 +35,8 @@ app.add_middleware(
 )
 
 
+
+
 class AddDataRequest(BaseModel):
     documents: list[str]  # List of new texts to add to FAISS
 
@@ -47,11 +51,12 @@ class SimilarTopicResponse(BaseModel):
 # Define data model for user input
 class ChatRequest(BaseModel):
     query: str
-    chat_history: list
+    # chat_history: list
 
 # Define response model
 class ChatResponse(BaseModel):
     answer: str
+    similar_questions: str
 
 class VectorDB:
     def __init__(self, vector_path):
@@ -114,6 +119,7 @@ class ChatBot:
     def __init__(self, vector_db):
         self.vector_db = vector_db
         self.chain = self._create_chain()
+        self.chat_history = []
 
     def _create_chain(self):
         model = ChatOpenAI(model="gpt-4o", temperature=0.5)
@@ -152,6 +158,27 @@ class ChatBot:
             'chat_history': chat_history
         })
         return response['answer']
+    
+    def generate_similar_questions(self, query):
+        prompt = f"Generate 3 similar questions in bullet points related to: '{query}'. The questions should be about Swinburne University."
+        response = self.process_chat(prompt, [])
+        return response.split('\n')
+    
+    def process_chat_with_similar_questions(self, query):
+        similar_questions = self.generate_similar_questions(query)
+        
+        full_response = "*".join(similar_questions)
+        
+        return full_response
+    
+    def process_user_input(self, user_input):
+        self.chat_history.append(HumanMessage(content=user_input))
+        ai_output = self.process_chat(user_input, self.chat_history)
+        self.chat_history.append(AIMessage(content=ai_output))
+
+        similar_questions = chatbot.process_chat_with_similar_questions(user_input)
+        
+        return ChatResponse(answer = ai_output, similar_questions= similar_questions)
 
 
 # Initialize the vector database and chatbot once when the app starts
@@ -163,9 +190,8 @@ chatbot = ChatBot(vector_db)
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        # Process the user's chat query using the chatbot
-        response = chatbot.process_chat(request.query, request.chat_history)
-        return ChatResponse(answer=response)
+        response = chatbot.process_user_input(request.query)
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
