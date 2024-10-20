@@ -10,8 +10,41 @@ import {
     InputAdornment,
     Autocomplete,
     Chip,
+    Typography,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { keyframes } from "@mui/system";
+
+const pulseAnimation = keyframes`
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+`;
+
+const ThinkingIndicator = () => (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 2 }}>
+        <Typography variant="body1" sx={{ mr: 1 }}>
+            Swinburne Chatbot is thinking
+        </Typography>
+        {[0, 1, 2].map((i) => (
+            <Typography
+                key={i}
+                variant="body1"
+                component="span"
+                sx={{
+                    animation: `${pulseAnimation} 1.4s ease-in-out ${i * 0.2}s infinite`,
+                    display: 'inline-block',
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    backgroundColor: 'primary.main',
+                    mx: 0.5,
+                }}
+            >
+                .
+            </Typography>
+        ))}
+    </Box>
+);
 
 const ChatBot = () => {
     const [chatHistory, setChatHistory] = useState([
@@ -20,6 +53,7 @@ const ChatBot = () => {
     const [inputValue, setInputValue] = useState("");
     const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
     const [showSimilarQuestions, setShowSimilarQuestions] = useState(true);
+    const [isThinking, setIsThinking] = useState(false);
 
     const chatContainerRef = useRef(null);
 
@@ -27,20 +61,14 @@ const ChatBot = () => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [chatHistory]);
+    }, [chatHistory, isThinking]);
 
     const cleanString = (str) => {
-        // Remove special characters from the beginning of the string
         let cleaned = str.replace(/^[^a-zA-Z0-9]+/, '');
-        
-        // Remove special characters from the end, except for question marks
         cleaned = cleaned.replace(/[^a-zA-Z0-9]+$/, '');
-        
-        // If the original string ended with a question mark, add it back
         if (str.trim().endsWith('?')) {
             cleaned += '?';
         }
-        
         return cleaned.trim();
     };
 
@@ -49,6 +77,7 @@ const ChatBot = () => {
             const messageToSend = inputValue;
             setInputValue("");
             setShowSimilarQuestions(false);
+            setIsThinking(true);
 
             setChatHistory((prevHistory) => [
                 ...prevHistory,
@@ -75,7 +104,6 @@ const ChatBot = () => {
                     { user: "bot", message: data.answer },
                 ]);
 
-                // Update autoCompleteOptions with similar questions
                 if (data.similar_questions) {
                     const newOptions = data.similar_questions
                         .split('*')
@@ -90,6 +118,8 @@ const ChatBot = () => {
                     ...prevHistory,
                     { user: "bot", message: "Sorry, I encountered an error. Please try again later." },
                 ]);
+            } finally {
+                setIsThinking(false);
             }
         }
     };
@@ -141,6 +171,7 @@ const ChatBot = () => {
                         </ListItem>
                     ))}
                 </List>
+                {isThinking && <ThinkingIndicator />}
                 {showSimilarQuestions && (
                     <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
                         {autoCompleteOptions.map((topic, index) => (
