@@ -54,7 +54,7 @@ class ChatBot:
     
     def process_chat_with_similar_questions(self, query):
         similar_questions = self.generate_similar_questions(query)
-        return "*".join(similar_questions)
+        return "".join(similar_questions)
     
     def process_user_input(self, user_input):
         self.chat_history.append(HumanMessage(content=user_input))
