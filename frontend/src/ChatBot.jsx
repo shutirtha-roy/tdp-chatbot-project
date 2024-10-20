@@ -13,6 +13,7 @@ import {
     Typography,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import MicIcon from "@mui/icons-material/Mic";
 import { keyframes } from "@mui/system";
 
 const pulseAnimation = keyframes`
@@ -54,14 +55,36 @@ const ChatBot = () => {
     const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
     const [showSimilarQuestions, setShowSimilarQuestions] = useState(true);
     const [isThinking, setIsThinking] = useState(false);
+    const [isListening, setIsListening] = useState(false);
 
     const chatContainerRef = useRef(null);
+    const recognitionRef = useRef(null);
 
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [chatHistory, isThinking]);
+
+    useEffect(() => {
+        // Initialize speech recognition
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.lang = 'en-US';
+
+            recognitionRef.current.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                setInputValue(transcript);
+                handleSend(transcript);
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsListening(false);
+            };
+        }
+    }, []);
 
     const cleanString = (str) => {
         let cleaned = str.replace(/^[^a-zA-Z0-9]+/, '');
@@ -72,16 +95,15 @@ const ChatBot = () => {
         return cleaned.trim();
     };
 
-    const handleSend = async () => {
-        if (inputValue.trim() !== "") {
-            const messageToSend = inputValue;
+    const handleSend = async (message = inputValue) => {
+        if (message.trim() !== "") {
             setInputValue("");
             setShowSimilarQuestions(false);
             setIsThinking(true);
 
             setChatHistory((prevHistory) => [
                 ...prevHistory,
-                { user: "user", message: messageToSend },
+                { user: "user", message: message },
             ]);
 
             try {
@@ -90,7 +112,7 @@ const ChatBot = () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ query: messageToSend }),
+                    body: JSON.stringify({ query: message }),
                 });
 
                 if (!response.ok) {
@@ -134,7 +156,16 @@ const ChatBot = () => {
     const handleChipClick = (topic) => {
         setInputValue(topic);
         setShowSimilarQuestions(false);
-        handleSend();
+        handleSend(topic);
+    };
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current.stop();
+        } else {
+            recognitionRef.current.start();
+            setIsListening(true);
+        }
     };
 
     return (
@@ -204,7 +235,10 @@ const ChatBot = () => {
                                 ...params.InputProps,
                                 endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton onClick={handleSend}>
+                                        <IconButton onClick={toggleListening} color={isListening ? "secondary" : "default"}>
+                                            <MicIcon />
+                                        </IconButton>
+                                        <IconButton onClick={() => handleSend()}>
                                             <SendIcon />
                                         </IconButton>
                                     </InputAdornment>
