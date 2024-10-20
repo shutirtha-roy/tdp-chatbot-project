@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import streamlit as st
+from streamlit.components.v1 import html
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -103,17 +104,20 @@ class ChatInterface:
         st.header("Chat With Swinburne FAQ 🎓")
 
     def display_chat_history(self):
-        for msg in reversed(self.chat_history):
+        for msg in self.chat_history:
             if isinstance(msg, HumanMessage):
                 st.chat_message("user", avatar="🧑").markdown(f"**You:** {msg.content}")
             else:
-                st.chat_message("assistant", avatar="🤖").markdown(f"**FAQ:** {msg.content}")
+                st.chat_message("assistant", avatar="🤖").markdown(self._format_ai_message(msg.content))
+
+    def _format_ai_message(self, content):
+        # Remove the "Here are three similar questions:" part
+        main_content = content.split("Here are three similar questions:")[0].strip()
+        return main_content
 
     def get_user_input(self):
-        with st.form(key='user_input_form', clear_on_submit=True):
-            user_input = st.text_input("Ask me anything:", placeholder="Type your message and press Enter")
-            submit_button = st.form_submit_button(label='Send')
-        return user_input if submit_button else None
+        user_input = st.text_input("Ask me anything:", key="user_input", placeholder="Type your message and press Enter")
+        return user_input if user_input else None
 
     def process_user_input(self, user_input):
         with st.spinner('FAQ Chatbot is thinking...'):
@@ -121,12 +125,64 @@ class ChatInterface:
             ai_output = self.chatbot.process_chat_with_similar_questions(user_input, self.chat_history)
             self.chat_history.append(AIMessage(content=ai_output))
 
+    def display_similar_questions(self, questions):
+        st.markdown("### You might also be interested in:")
+        for i, question in enumerate(questions):
+            if st.button(f"{question}", key=f"question_{i}"):
+                st.session_state.user_input = question
+
     def run(self):
         self.setup_page()
         user_input = self.get_user_input()
+        
         if user_input:
             self.process_user_input(user_input)
+        
         self.display_chat_history()
+        
+        # Extract and display similar questions
+        if self.chat_history:
+            last_ai_message = next((msg for msg in reversed(self.chat_history) if isinstance(msg, AIMessage)), None)
+            if last_ai_message:
+                parts = last_ai_message.content.split("Here are three similar questions:")
+                if len(parts) > 1:
+                    similar_questions = [q.strip().strip('•') for q in parts[1].strip().split('\n') if q.strip()]
+                    self.display_similar_questions(similar_questions)
+
+    def run(self):
+        self.setup_page()
+        user_input = self.get_user_input()
+        
+        if user_input:
+            self.process_user_input(user_input)
+        
+        self.display_chat_history()
+        
+        # Extract and display similar questions
+        if self.chat_history:
+            last_ai_message = next((msg for msg in reversed(self.chat_history) if isinstance(msg, AIMessage)), None)
+            if last_ai_message:
+                parts = last_ai_message.content.split("Here are three similar questions:")
+                if len(parts) > 1:
+                    similar_questions = [q.strip().strip('•') for q in parts[1].strip().split('\n') if q.strip()]
+                    self.display_similar_questions(similar_questions)
+
+        # JavaScript to handle button clicks and update input field
+        js = """
+        <script>
+        const buttons = parent.document.querySelectorAll('button[data-testid^="stButton"]');
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                const inputField = parent.document.querySelector('input[data-testid="stTextInput"]');
+                if (inputField) {
+                    inputField.value = this.innerText.substring(3);  // Remove the number and dot
+                    inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        });
+        </script>
+        """
+        html(js)
 
 def main():
     vector_db = VectorDB(vector_path='Swinburne_Chat_Bot')
