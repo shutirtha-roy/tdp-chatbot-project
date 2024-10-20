@@ -19,6 +19,7 @@ const ChatBot = () => {
     ]);
     const [inputValue, setInputValue] = useState("");
     const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
+    const [showSimilarQuestions, setShowSimilarQuestions] = useState(true);
 
     const chatContainerRef = useRef(null);
 
@@ -32,6 +33,7 @@ const ChatBot = () => {
         if (inputValue.trim() !== "") {
             const messageToSend = inputValue;
             setInputValue("");
+            setShowSimilarQuestions(false);
 
             setChatHistory((prevHistory) => [
                 ...prevHistory,
@@ -60,8 +62,9 @@ const ChatBot = () => {
 
                 // Update autoCompleteOptions with similar questions
                 if (data.similar_questions) {
-                    const newOptions = data.similar_questions.split('-').filter(q => q.trim() !== '');
+                    const newOptions = data.similar_questions.split('*').filter(q => q.trim() !== '');
                     setAutoCompleteOptions(newOptions);
+                    setShowSimilarQuestions(true);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -82,6 +85,7 @@ const ChatBot = () => {
 
     const handleChipClick = (topic) => {
         setInputValue(topic);
+        setShowSimilarQuestions(false);
         handleSend();
     };
 
@@ -119,16 +123,18 @@ const ChatBot = () => {
                         </ListItem>
                     ))}
                 </List>
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
-                    {autoCompleteOptions.map((topic, index) => (
-                        <Chip
-                            key={index}
-                            label={topic}
-                            onClick={() => handleChipClick(topic)}
-                            sx={{ margin: 1 }}
-                        />
-                    ))}
-                </Box>
+                {showSimilarQuestions && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
+                        {autoCompleteOptions.map((topic, index) => (
+                            <Chip
+                                key={index}
+                                label={topic}
+                                onClick={() => handleChipClick(topic)}
+                                sx={{ margin: 1 }}
+                            />
+                        ))}
+                    </Box>
+                )}
             </Paper>
 
             <Box sx={{ display: "flex", width: "100%", padding: 0 }}>
