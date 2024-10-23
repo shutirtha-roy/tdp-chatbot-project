@@ -46,9 +46,15 @@ async def add_topic(request: AddTopicRequest):
 async def get_similar_topics(request: SimilarTopicRequest):
     try:
         if request.query:
-            search_results = vector_db_topic.similarity_search(request.query, k=5)
-            similar_topics = [doc.page_content for doc in search_results]
+
+            # Get result from OpenAI if there is a chat history
+            chatbotResponse= chatbot.generate_similar_questionsWithFormat(request.query)
+            similar_topics = chatbotResponse
+            # Get result from db
+            # search_results = vector_db_topic.similarity_search(request.query, k=4)
+            # similar_topics = [doc.page_content for doc in search_results]
         else:
+            
             similar_topics = get_most_frequent_topics()
         return SimilarTopicResponse(topics=similar_topics)
     except Exception as e:

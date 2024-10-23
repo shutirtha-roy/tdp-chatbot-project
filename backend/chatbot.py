@@ -53,6 +53,12 @@ class ChatBot:
         questions = response.split('\n')
         return questions[1:]
     
+    def generate_similar_questionsWithFormat(self, query):
+        prompt = f"Generate 4 similar questions in bullet points related to: '{query}'. The questions should be about Swinburne University. You dont need to write anything beside topics. Just each topic seperate. No - in the front as well"
+        response = self.process_chat(prompt, [])
+        questions = response.split('\n')
+        return questions
+
     def process_chat_with_similar_questions(self, query):
         similar_questions = self.generate_similar_questions(query)
         return "*".join(similar_questions)
