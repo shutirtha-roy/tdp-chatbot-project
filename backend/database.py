@@ -42,8 +42,8 @@ class VectorDB:
 
     def get_retriever(self):
         return self.vector_store.as_retriever(
-            search_type="mmr",
-            search_kwargs={'k': 1, "score_threshold": 0.1}
+            search_type="similarity",
+            search_kwargs={'k': 1}
         )
 
     def add_documents(self, documents):
