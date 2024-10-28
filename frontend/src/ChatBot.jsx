@@ -16,6 +16,8 @@ import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
 import { keyframes } from "@mui/system";
 
+import axios from 'axios'; // Import Axios
+
 const pulseAnimation = keyframes`
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
@@ -67,6 +69,21 @@ const ChatBot = () => {
         }
     }, [chatHistory, isThinking]);
 
+    // Fetch autocomplete options on component mount
+    useEffect(() => {
+        const fetchAutoCompleteOptions = async () => {
+            try {
+                chatHistoryFromCookie=""// if the user have chat history put it in
+                const response = await axios.post('http://127.0.0.1:8000/similar-topics',{ query: chatHistoryFromCookie }); // Replace with your API endpoint
+                console.log(response.data);
+                setAutoCompleteOptions(response.data.topics); // Assuming response.data is an array of options
+            } catch (error) {
+                console.error("Error fetching autocomplete options:", error);
+            }
+        };
+
+        fetchAutoCompleteOptions();
+    }, []);
     useEffect(() => {
         // Initialize speech recognition
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -134,6 +151,8 @@ const ChatBot = () => {
                         .split('*')
                         .map(q => cleanString(q))
                         .filter(q => q.trim() !== '');
+                    console.log(data.similar_questions);
+                    console.log(newOptions)
                     setAutoCompleteOptions(newOptions);
                     setShowSimilarQuestions(true);
                 }
