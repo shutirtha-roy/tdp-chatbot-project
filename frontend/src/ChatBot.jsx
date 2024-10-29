@@ -63,11 +63,11 @@ const ChatBot = () => {
     const chatContainerRef = useRef(null);
     const recognitionRef = useRef(null);
 
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-    }, [chatHistory, isThinking]);
+    // useEffect(() => {
+    //     if (chatContainerRef.current) {
+    //         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    //     }
+    // }, [chatHistory, isThinking]);
 
     useEffect(() => {
         const fetchAutoCompleteOptions = async () => {
@@ -231,8 +231,8 @@ const ChatBot = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 2,
-                    padding: '8px 24px', // Added padding
-                    borderRadius: '4px', // Added rounded corners
+                    padding: '8px 24px',
+                    borderRadius: '4px',
                 }}
             >
                 <ChatIcon sx={{ mr: 1, fontSize: 40 }} color="black" />
