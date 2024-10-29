@@ -15,8 +15,7 @@ import {
 import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
 import { keyframes } from "@mui/system";
-
-import axios from 'axios'; // Import Axios
+import axios from 'axios';
 
 const pulseAnimation = keyframes`
   0%, 100% { opacity: 0.5; }
@@ -69,14 +68,12 @@ const ChatBot = () => {
         }
     }, [chatHistory, isThinking]);
 
-    // Fetch autocomplete options on component mount
     useEffect(() => {
         const fetchAutoCompleteOptions = async () => {
             try {
-                let chatHistoryFromCookie=""// if the user have chat history put it in
-                const response = await axios.post('http://127.0.0.1:8000/similar-topics',{ query: chatHistoryFromCookie }); // Replace with your API endpoint
-                console.log(response.data);
-                setAutoCompleteOptions(response.data.topics); // Assuming response.data is an array of options
+                let chatHistoryFromCookie = ""; // Add logic to get chat history from cookie if needed
+                const response = await axios.post('http://127.0.0.1:8000/similar-topics', { query: chatHistoryFromCookie });
+                setAutoCompleteOptions(response.data.topics);
             } catch (error) {
                 console.error("Error fetching autocomplete options:", error);
             }
@@ -84,8 +81,8 @@ const ChatBot = () => {
 
         fetchAutoCompleteOptions();
     }, []);
+
     useEffect(() => {
-        // Initialize speech recognition
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
@@ -113,15 +110,21 @@ const ChatBot = () => {
         }
         return cleaned.trim();
     };
-    const addTopic= async (topic) => {
-        const response = await fetch('http://127.0.0.1:8000/add-topic', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ topics: [topic] }),
-        });
-    }
+
+    const addTopic = async (topic) => {
+        try {
+            await fetch('http://127.0.0.1:8000/add-topic', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topics: [topic] }),
+            });
+        } catch (error) {
+            console.error('Error adding topic:', error);
+        }
+    };
+
     const handleSend = async (message = inputValue) => {
         if (message.trim() !== "") {
             setInputValue("");
@@ -135,8 +138,7 @@ const ChatBot = () => {
             ]);
 
             try {
-                // add topic to database
-                addTopic(message);
+                await addTopic(message);
 
                 const response = await fetch('http://127.0.0.1:8000/chat', {
                     method: 'POST',
@@ -162,8 +164,6 @@ const ChatBot = () => {
                         .split('*')
                         .map(q => cleanString(q))
                         .filter(q => q.trim() !== '');
-                    console.log(data.similar_questions);
-                    console.log(newOptions)
                     setAutoCompleteOptions(newOptions);
                     setShowSimilarQuestions(true);
                 }
@@ -205,6 +205,9 @@ const ChatBot = () => {
 
     return (
         <Box sx={{ width: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "90vh" }}>
+            <Typography variant="h4" align="center" gutterBottom sx={{ mt: 2 }}>
+                Swinburne Chatbot
+            </Typography>
             <Paper
                 ref={chatContainerRef}
                 sx={{
@@ -270,14 +273,14 @@ const ChatBot = () => {
                                 ...params.InputProps,
                                 endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton 
-                                            onClick={toggleListening} 
+                                        <IconButton
+                                            onClick={toggleListening}
                                             color={isListening ? "secondary" : "default"}
                                             disabled={isSearching && !isListening}
                                         >
                                             <MicIcon />
                                         </IconButton>
-                                        <IconButton 
+                                        <IconButton
                                             onClick={() => handleSend()}
                                             disabled={isSearching}
                                         >
