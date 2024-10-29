@@ -204,37 +204,103 @@ const ChatBot = () => {
     };
 
     return (
-        <Box sx={{ width: "1000px", margin: "0 auto", display: "flex", flexDirection: "column", height: "90vh" }}>
-            <Typography variant="h4" align="center" gutterBottom sx={{ mt: 2 }}>
+        <Box 
+            sx={{ 
+                width: "1000px", 
+                margin: "0 auto", 
+                display: "flex", 
+                flexDirection: "column", 
+                height: "90vh",
+                bgcolor: '#fafafa'
+            }}
+        >
+            <Typography 
+                variant="h4" 
+                align="center" 
+                gutterBottom 
+                sx={{ 
+                    mt: 3,
+                    mb: 4,
+                    fontWeight: 'bold',
+                    color: '#E31937', // Swinburne red
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
+                    '&::before, &::after': {
+                        content: '""',
+                        display: 'block',
+                        width: '50px',
+                        height: '3px',
+                        backgroundColor: '#E31937',
+                        borderRadius: '2px'
+                    }
+                }}
+            >
                 Swinburne Chatbot
             </Typography>
+    
             <Paper
                 ref={chatContainerRef}
+                elevation={3}
                 sx={{
                     flexGrow: 1,
                     overflowY: "auto",
-                    p: 2,
+                    p: 3,
                     display: "flex",
                     flexDirection: "column",
-                    backgroundColor: "#f5f5f5",
+                    backgroundColor: "#ffffff",
+                    borderRadius: 2,
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 }}
             >
-                <List>
+                <List sx={{ width: '100%' }}>
                     {chatHistory.map((chat, index) => (
                         <ListItem
                             key={index}
                             sx={{
                                 justifyContent: chat.user === "user" ? "flex-end" : "flex-start",
+                                mb: 2,
+                                px: 0
                             }}
                         >
                             <ListItemText
                                 primary={chat.message}
                                 sx={{
                                     textAlign: chat.user === "user" ? "right" : "left",
-                                    backgroundColor: chat.user === "user" ? "#e0f7fa" : "#eeeeee",
-                                    borderRadius: 1,
-                                    padding: 1,
-                                    maxWidth: "80%",
+                                    backgroundColor: chat.user === "user" ? '#E31937' : '#f8f9fa',
+                                    color: chat.user === "user" ? '#ffffff' : '#333333',
+                                    borderRadius: 2,
+                                    padding: 2,
+                                    maxWidth: "70%",
+                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                                    '& .MuiTypography-root': {
+                                        fontSize: '0.95rem',
+                                        lineHeight: 1.5,
+                                    },
+                                    position: 'relative',
+                                    '&::after': chat.user === "user" ? {
+                                        content: '""',
+                                        position: 'absolute',
+                                        right: -10,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        borderLeft: '10px solid #E31937',
+                                        borderTop: '8px solid transparent',
+                                        borderBottom: '8px solid transparent',
+                                    } : {
+                                        content: '""',
+                                        position: 'absolute',
+                                        left: -10,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        borderRight: '10px solid #f8f9fa',
+                                        borderTop: '8px solid transparent',
+                                        borderBottom: '8px solid transparent',
+                                    }
                                 }}
                             />
                         </ListItem>
@@ -242,20 +308,42 @@ const ChatBot = () => {
                 </List>
                 {isThinking && <ThinkingIndicator />}
                 {showSimilarQuestions && !isSearching && (
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2, flexWrap: "wrap" }}>
+                    <Box sx={{ 
+                        display: "flex", 
+                        justifyContent: "center", 
+                        mt: 3, 
+                        flexWrap: "wrap",
+                        gap: 1
+                    }}>
                         {autoCompleteOptions.map((topic, index) => (
                             <Chip
                                 key={index}
                                 label={topic}
                                 onClick={() => handleChipClick(topic)}
-                                sx={{ margin: 1 }}
+                                sx={{ 
+                                    margin: 0.5,
+                                    bgcolor: 'rgba(227, 25, 55, 0.1)',
+                                    color: '#E31937',
+                                    border: '1px solid #E31937',
+                                    '&:hover': {
+                                        bgcolor: '#E31937',
+                                        color: '#ffffff',
+                                    },
+                                    transition: 'all 0.2s ease-in-out',
+                                    fontWeight: 500
+                                }}
                             />
                         ))}
                     </Box>
                 )}
             </Paper>
-
-            <Box sx={{ display: "flex", width: "100%", padding: 0 }}>
+    
+            <Box sx={{ 
+                display: "flex", 
+                width: "100%", 
+                padding: 2,
+                mt: 2
+            }}>
                 <Autocomplete
                     freeSolo
                     options={isSearching ? [] : autoCompleteOptions}
