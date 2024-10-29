@@ -16,6 +16,7 @@ import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
 import { keyframes } from "@mui/system";
 import axios from 'axios';
+import ChatIcon from "@mui/icons-material/Chat";
 
 const pulseAnimation = keyframes`
   0%, 100% { opacity: 0.5; }
@@ -234,6 +235,7 @@ const ChatBot = () => {
                     borderRadius: '4px', // Added rounded corners
                 }}
             >
+                <ChatIcon sx={{ mr: 1, fontSize: 40 }} color="black" />
                 Swinburne Chatbot
             </Typography>
     
