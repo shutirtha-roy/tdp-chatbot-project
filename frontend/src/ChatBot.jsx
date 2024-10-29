@@ -73,7 +73,7 @@ const ChatBot = () => {
     useEffect(() => {
         const fetchAutoCompleteOptions = async () => {
             try {
-                chatHistoryFromCookie=""// if the user have chat history put it in
+                let chatHistoryFromCookie=""// if the user have chat history put it in
                 const response = await axios.post('http://127.0.0.1:8000/similar-topics',{ query: chatHistoryFromCookie }); // Replace with your API endpoint
                 console.log(response.data);
                 setAutoCompleteOptions(response.data.topics); // Assuming response.data is an array of options
@@ -113,7 +113,15 @@ const ChatBot = () => {
         }
         return cleaned.trim();
     };
-
+    const addTopic= async (topic) => {
+        const response = await fetch('http://127.0.0.1:8000/add-topic', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ topics: [topic] }),
+        });
+    }
     const handleSend = async (message = inputValue) => {
         if (message.trim() !== "") {
             setInputValue("");
@@ -127,6 +135,9 @@ const ChatBot = () => {
             ]);
 
             try {
+                // add topic to database
+                addTopic(message);
+
                 const response = await fetch('http://127.0.0.1:8000/chat', {
                     method: 'POST',
                     headers: {
