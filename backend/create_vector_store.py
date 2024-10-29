@@ -1,12 +1,10 @@
 from dotenv import load_dotenv
 load_dotenv()
-
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from urls_list import urls
-
 import os
 
 os.environ["USER_AGENT"] = os.getenv('USER_AGENT')
@@ -14,25 +12,11 @@ os.environ["USER_AGENT"] = os.getenv('USER_AGENT')
 def storeVector(urls):
     embedder = OpenAIEmbeddings(openai_api_key = os.getenv('OPENAI_API_KEY'))
     splitter = RecursiveCharacterTextSplitter()
-
-    batch_size = 1
     vector_store = None
+    splitted_docs = splitter.split_documents(WebBaseLoader(urls).load())
+    vector_store = FAISS.from_documents(splitted_docs, embedder)
 
-    batch_urls = urls[i:i+batch_size]
-
-    splitted_docs = splitter.split_documents(WebBaseLoader(batch_urls).load())
-
-    if vector_store is None:
-        vector_store = FAISS.from_documents(splitted_docs, embedder)
-    else:
-        new_vector_store = FAISS.from_documents(splitted_docs, embedder)
-        vector_store.merge_from(new_vector_store)
-
-    return vector_store
-
-
-vector_store = storeVector(urls)
-vector_store.save_local("Swinburne_Chat_Bot")    
+    return vector_store  
 
 #splitter = RecursiveCharacterTextSplitter()
 #embedder = OpenAIEmbeddings(openai_api_key = os.getenv('OPENAI_API_KEY'))
@@ -70,4 +54,4 @@ vector_store.save_local("Swinburne_Chat_Bot")
 # vector_store.merge_from(vector_store_4000_5000)
 # vector_store.merge_from(vector_store_5000_6000)
 # vector_store.merge_from(vector_store_6000_6036)
-vector_store.save_local("Swinburne_Chat_Bot")
+#vector_store.save_local("Swinburne_Chat_Bot")

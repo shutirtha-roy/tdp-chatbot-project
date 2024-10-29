@@ -3,6 +3,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_core.documents import Document
 from dotenv import load_dotenv
+from create_vector_store import storeVector
+from urls_list import urls
 load_dotenv()
 
 class VectorDB:
@@ -24,15 +26,21 @@ class VectorDB:
 
         if not os.path.exists(index_file_path):
             print(f"FAISS index not found. Creating a new one at {self.vector_path}...")
-            documents = [
-                Document(page_content="Swinburne University is located in Melbourne, Australia."),
-                Document(page_content="The university offers a wide range of undergraduate and postgraduate programs."),
-                Document(page_content="Swinburne is known for its focus on innovation, entrepreneurship, and technology."),
-                Document(page_content="Swinburne provides various student support services, including counseling and career advice.")
-            ]
-            embedder = OpenAIEmbeddings()
-            vector_store = FAISS.from_documents(documents, embedder)
-            vector_store.save_local(self.vector_path)
+
+            if self.vector_path == 'Swinburne_Chat_Bot':
+                print("Creating vector store from Swinburne URLs...")
+                vector_store = storeVector(urls)
+                vector_store.save_local(self.vector_path)
+            else:
+                documents = [
+                    Document(page_content="Swinburne University is located in Melbourne, Australia."),
+                    Document(page_content="The university offers a wide range of undergraduate and postgraduate programs."),
+                    Document(page_content="Swinburne is known for its focus on innovation, entrepreneurship, and technology."),
+                    Document(page_content="Swinburne provides various student support services, including counseling and career advice.")
+                ]
+                embedder = OpenAIEmbeddings()
+                vector_store = FAISS.from_documents(documents, embedder)
+                vector_store.save_local(self.vector_path)
             print("FAISS index created successfully.")
         else:
             print(f"Loading existing FAISS index from {self.vector_path}...")
