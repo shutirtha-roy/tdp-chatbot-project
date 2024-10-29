@@ -26,7 +26,7 @@ def update_topic_count(new_topics):
         for topic, count in topics_dict.items():
             writer.writerow([topic, count])
 
-def get_most_frequent_topics(n=5):
+def get_most_frequent_topics(n=4):
     topics = []
     if os.path.exists(topics_file):
         with open(topics_file, mode='r') as file:

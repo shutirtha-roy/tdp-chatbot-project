@@ -23,6 +23,7 @@ async def chat(request: ChatRequest):
 def health_check():
     return {"status": "OK"}
 
+# this is for adding data to the database, for testing only since the database is large
 @router.post("/add-data")
 async def add_data(request: AddDataRequest):
     try:
@@ -32,12 +33,15 @@ async def add_data(request: AddDataRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while adding data: {str(e)}")
 
+# this is for adding topics
 @router.post("/add-topic")
 async def add_topic(request: AddTopicRequest):
     try:
-        new_documents = [Document(page_content=topic) for topic in request.topics]
+        topics=[(chatbot.checkQuerySpelling(topic)).strip('\"') for topic in request.topics]
+        print(topics)
+        new_documents = [Document(page_content=topic) for topic in topics]
         vector_db_topic.add_documents(new_documents)
-        update_topic_count(request.topics)
+        update_topic_count(topics)
         return {"message": "Topics added successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while adding topics: {str(e)}")

@@ -69,3 +69,11 @@ class ChatBot:
         self.chat_history.append(AIMessage(content=ai_output))
         similar_questions = self.process_chat_with_similar_questions(user_input)
         return ai_output, similar_questions
+    
+    # this is for checking spelling only, this is needed because this does not need the swinbunre only commands
+    def checkQuerySpelling(self, query):
+        prompt = f"Check spelling only, just return the correct form: '{query}'."
+        model = ChatOpenAI(model="gpt-4o", temperature=0.5)
+        response = model.invoke(prompt)
+        topic = response.content
+        return topic
