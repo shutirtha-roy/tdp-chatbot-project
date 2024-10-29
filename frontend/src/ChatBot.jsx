@@ -222,21 +222,16 @@ const ChatBot = () => {
                     mt: 3,
                     mb: 4,
                     fontWeight: 'bold',
-                    color: '#E31937', // Swinburne red
+                    color: '#000000',
+              
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 2,
-                    '&::before, &::after': {
-                        content: '""',
-                        display: 'block',
-                        width: '50px',
-                        height: '3px',
-                        backgroundColor: '#E31937',
-                        borderRadius: '2px'
-                    }
+                    padding: '8px 24px', // Added padding
+                    borderRadius: '4px', // Added rounded corners
                 }}
             >
                 Swinburne Chatbot
@@ -271,8 +266,8 @@ const ChatBot = () => {
                                 primary={chat.message}
                                 sx={{
                                     textAlign: chat.user === "user" ? "right" : "left",
-                                    backgroundColor: chat.user === "user" ? '#E31937' : '#f8f9fa',
-                                    color: chat.user === "user" ? '#ffffff' : '#333333',
+                                    backgroundColor: chat.user === "user" ? '#000' : '#f8f9fa',
+                                    color: chat.user === "user" ? '#fff' : '#333333',
                                     borderRadius: 2,
                                     padding: 2,
                                     maxWidth: "70%",
@@ -281,26 +276,7 @@ const ChatBot = () => {
                                         fontSize: '0.95rem',
                                         lineHeight: 1.5,
                                     },
-                                    position: 'relative',
-                                    '&::after': chat.user === "user" ? {
-                                        content: '""',
-                                        position: 'absolute',
-                                        right: -10,
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        borderLeft: '10px solid #E31937',
-                                        borderTop: '8px solid transparent',
-                                        borderBottom: '8px solid transparent',
-                                    } : {
-                                        content: '""',
-                                        position: 'absolute',
-                                        left: -10,
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        borderRight: '10px solid #f8f9fa',
-                                        borderTop: '8px solid transparent',
-                                        borderBottom: '8px solid transparent',
-                                    }
+                                    
                                 }}
                             />
                         </ListItem>
@@ -322,11 +298,11 @@ const ChatBot = () => {
                                 onClick={() => handleChipClick(topic)}
                                 sx={{ 
                                     margin: 0.5,
-                                    bgcolor: 'rgba(227, 25, 55, 0.1)',
-                                    color: '#E31937',
-                                    border: '1px solid #E31937',
+                                    bgcolor: 'rgba(0, 0, 0, 0.1)', // Changed from red to black
+                                    color: '#000000', // Changed to black
+                                    border: '1px solid #000000', // Changed to black border
                                     '&:hover': {
-                                        bgcolor: '#E31937',
+                                        bgcolor: '#000000', // Changed hover background to black
                                         color: '#ffffff',
                                     },
                                     transition: 'all 0.2s ease-in-out',
