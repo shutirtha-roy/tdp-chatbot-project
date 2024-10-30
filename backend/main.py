@@ -19,9 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-vector_db = VectorDB(vector_path='Swinburne_Chat_Bot')
-vector_db_topic = VectorDB(vector_path='Swinburne_Chat_Bot_Topics')
-chatbot = ChatBot(vector_db)
+# vector_db = VectorDB(vector_path='Swinburne_Chat_Bot')
+# vector_db_topic = VectorDB(vector_path='Swinburne_Chat_Bot_Topics')
+# chatbot = ChatBot(vector_db)
 
 app.include_router(router)
 
